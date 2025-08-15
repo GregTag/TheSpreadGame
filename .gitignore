@@ -1,0 +1,14 @@
+# Backend build artifacts
+/backend/build/
+/build/
+/backend/CMakeUserPresets.json
+
+# Clangd
+/backend/.cache/
+/.cache/
+
+# Frontend
+/frontend/node_modules/
+
+# Editor
+.vscode/
