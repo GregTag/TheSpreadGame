@@ -1,5 +1,7 @@
 #include "session.hpp"
 
+#include <spdlog/spdlog.h>
+
 #include <boost/asio/bind_executor.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/co_spawn.hpp>
@@ -38,9 +40,11 @@ boost::asio::awaitable<void> Session::run() {
     boost::beast::error_code ec;
     co_await ws_.async_accept(boost::asio::redirect_error(boost::asio::use_awaitable, ec));
     if (ec) {
+        spdlog::error("WebSocket accept failed: {}", ec.message());
         co_return;
     }
     player_id_ = co_await lobby_manager_.connect(shared_from_this());
+    spdlog::info("Player {} connected", player_id_);
     send_json({{"type", "server_ready"},
                {"player_id", player_id_},
                {"message", "Welcome to Spread server"}});
@@ -49,14 +53,17 @@ boost::asio::awaitable<void> Session::run() {
         co_await ws_.async_read(buffer_,
                                 boost::asio::redirect_error(boost::asio::use_awaitable, ec));
         if (ec) {
+            spdlog::info("Player {} disconnected: {}", player_id_, ec.message());
             break;
         }
         try {
             auto data = boost::beast::buffers_to_string(buffer_.data());
             buffer_.consume(buffer_.size());
+            spdlog::debug("recv [{}]: {}", player_id_, data);
             auto msg = nlohmann::json::parse(data);
             co_await route_message(std::move(msg));
         } catch (const std::exception& ex) {
+            spdlog::warn("Exception while handling message for {}: {}", player_id_, ex.what());
             send_json({{"type", "error"}, {"message", ex.what()}});
         }
     }
@@ -70,6 +77,7 @@ void Session::send_json(nlohmann::json msg) {
 boost::asio::awaitable<void> Session::route_message(nlohmann::json msg) {
     try {
         std::string type = msg.value("type", "");
+        spdlog::info("{} -> {}", player_id_, type);
         if (type == "ping") {
             co_await handle_ping(msg);
         } else if (type == "list_lobbies") {
@@ -83,9 +91,11 @@ boost::asio::awaitable<void> Session::route_message(nlohmann::json msg) {
             // } else if (type == "start_game") {
             //     co_await handle_start_game(msg);
         } else {
+            spdlog::warn("{} sent unknown message type", player_id_);
             send_json({{"type", "error"}, {"message", "Unknown message type"}});
         }
     } catch (const std::exception& ex) {
+        spdlog::error("Route error for {}: {}", player_id_, ex.what());
         send_json({{"type", "error"}, {"message", std::string("Exception: ") + ex.what()}});
     }
 }
@@ -107,18 +117,21 @@ boost::asio::awaitable<void> Session::handle_create_lobby(const nlohmann::json& 
     int maxp = msg.value("max_players", 4);
     std::string name = msg.at("name");
     auto lobby_id = co_await lobby_manager_.create_lobby(player_id_, {name, maxp, w, h});
+    spdlog::info("{} created lobby {}", player_id_, lobby_id);
     send_json({{"type", "joined"}, {"lobby_id", lobby_id}});
 }
 
 boost::asio::awaitable<void> Session::handle_join_lobby(const nlohmann::json& msg) {
     std::string lobby_id = msg.at("lobby_id");
     co_await lobby_manager_.join_lobby(lobby_id, player_id_);
+    spdlog::info("{} joined lobby {}", player_id_, lobby_id);
     send_json({{"type", "joined"}, {"lobby_id", lobby_id}});
 }
 
 boost::asio::awaitable<void> Session::handle_leave_lobby(const nlohmann::json& msg) {
     std::string lobby_id = msg.at("lobby_id");
     co_await lobby_manager_.leave_lobby(lobby_id);
+    spdlog::info("{} left lobby {}", player_id_, lobby_id);
     send_json({{"type", "left"}, {"lobby_id", lobby_id}});
 }
 

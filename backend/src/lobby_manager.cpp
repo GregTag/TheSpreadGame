@@ -1,5 +1,7 @@
 #include "lobby_manager.hpp"
 
+#include <spdlog/spdlog.h>
+
 #include <boost/asio/experimental/cancellation_condition.hpp>
 #include <boost/asio/use_awaitable.hpp>
 #include <sstream>
@@ -17,6 +19,7 @@ boost::asio::awaitable<std::string> LobbyManager::connect_impl(std::shared_ptr<S
     oss << "p" << player_counter_++;
     std::string pid = oss.str();
     sessions_[pid] = session;
+    spdlog::info("Registered session for {}", pid);
     co_return pid;
 }
 
@@ -27,6 +30,7 @@ boost::asio::awaitable<void> LobbyManager::disconnect(const std::string& player_
 boost::asio::awaitable<void> LobbyManager::disconnect_impl(const std::string& player_id) {
     sessions_.erase(player_id);
     // If in a lobby, remove the player and broadcast update
+    spdlog::info("Disconnect {}", player_id);
     co_await leave_lobby_impl(player_id);
 }
 
@@ -39,6 +43,7 @@ boost::asio::awaitable<std::string> LobbyManager::create_lobby(const std::string
 boost::asio::awaitable<std::string> LobbyManager::create_lobby_impl(const std::string& player_id,
                                                                     models::LobbyOptions options) {
     if (membership_.find(player_id) != membership_.end()) {
+        spdlog::warn("{} already in a lobby", player_id);
         throw errors::PlayerAlreadyInLobby;
     }
 
@@ -47,6 +52,7 @@ boost::asio::awaitable<std::string> LobbyManager::create_lobby_impl(const std::s
     std::string lobby_id = oss.str();
     lobbies_[lobby_id] = models::Lobby{lobby_id, player_id, {player_id}, std::move(options)};
     membership_[player_id] = lobby_id;
+    spdlog::info("Created lobby {} by {}", lobby_id, player_id);
     send_to_all({{"type", "lobby_created"}, {"lobby", lobbies_[lobby_id]}});
     co_return lobby_id;
 }
@@ -61,9 +67,11 @@ boost::asio::awaitable<void> LobbyManager::join_lobby_impl(const std::string& lo
                                                            const std::string& player_id) {
     auto it = lobbies_.find(lobby_id);
     if (it == lobbies_.end()) {
+        spdlog::warn("lobby {} not found for join by {}", lobby_id, player_id);
         throw errors::LobbyNotFound;
     }
     if (membership_.find(player_id) != membership_.end()) {
+        spdlog::warn("{} already in a lobby on join {}", player_id, lobby_id);
         throw errors::PlayerAlreadyInLobby;
     }
 
@@ -81,6 +89,7 @@ boost::asio::awaitable<void> LobbyManager::leave_lobby(const std::string& player
 boost::asio::awaitable<void> LobbyManager::leave_lobby_impl(const std::string& player_id) {
     auto it = membership_.find(player_id);
     if (it == membership_.end()) {
+        spdlog::warn("{} tried to leave but not in lobby", player_id);
         throw errors::PlayerNotInLobby;
     }
 
@@ -89,6 +98,7 @@ boost::asio::awaitable<void> LobbyManager::leave_lobby_impl(const std::string& p
 
     auto lit = lobbies_.find(lobby_id);
     if (lit == lobbies_.end()) {
+        spdlog::warn("lobby {} vanished before leave of {}", lobby_id, player_id);
         throw errors::LobbyNotFound;
     }
 
@@ -97,6 +107,7 @@ boost::asio::awaitable<void> LobbyManager::leave_lobby_impl(const std::string& p
     l.players.erase(pos);
 
     if (l.players.empty()) {
+        spdlog::info("Removed last player {}; deleting lobby {}", player_id, lobby_id);
         lobbies_.erase(lit);
         send_to_all({{"type", "lobby_gone"}, {"lobby_id", lobby_id}});
         co_return;

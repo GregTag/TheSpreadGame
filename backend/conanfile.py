@@ -16,6 +16,7 @@ class SpreadServerConan(ConanFile):
     requires = (
         "boost/1.88.0",
         "nlohmann_json/3.12.0",
+        "spdlog/1.13.0",
     )
 
     # Optional: tweak Boost to avoid unnecessary components

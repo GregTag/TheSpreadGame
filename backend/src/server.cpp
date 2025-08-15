@@ -1,8 +1,9 @@
 #include "server.hpp"
 
+#include <spdlog/spdlog.h>
+
 #include <boost/asio.hpp>
 #include <boost/asio/detached.hpp>
-#include <iostream>
 
 #include "lobby_manager.hpp"
 #include "session.hpp"
@@ -21,9 +22,11 @@ boost::asio::awaitable<void> Server::do_accept() {
         auto [ec, socket] =
                 co_await acceptor_.async_accept(boost::asio::as_tuple(boost::asio::use_awaitable));
         if (!ec) {
+            spdlog::info("Accepted connection from {}",
+                         socket.remote_endpoint().address().to_string());
             std::make_shared<Session>(std::move(socket), lobby_manager_)->start();
         } else {
-            std::cerr << "Accept error: " << ec.message() << std::endl;
+            spdlog::error("Accept error: {}", ec.message());
         }
     }
 }

@@ -13,6 +13,7 @@ option(BUILD_TESTS "Build tests" OFF)
 find_package(Threads REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system)
 find_package(nlohmann_json REQUIRED)
+find_package(spdlog REQUIRED)
 
 # Find all source files
 file(GLOB_RECURSE SOURCE_FILES
@@ -23,7 +24,7 @@ add_executable(spread_server ${SOURCE_FILES})
 
 target_include_directories(spread_server PRIVATE include)
 
-target_link_libraries(spread_server PRIVATE Boost::system Threads::Threads nlohmann_json::nlohmann_json)
+target_link_libraries(spread_server PRIVATE Boost::system Threads::Threads nlohmann_json::nlohmann_json spdlog::spdlog)
 
 target_compile_definitions(spread_server PRIVATE BOOST_ASIO_HAS_STD_COROUTINE)
 
