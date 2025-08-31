@@ -3,6 +3,8 @@
 #include <numeric>
 #include <vector>
 
+namespace spread_logic {
+
 Game::Game(std::size_t player_count, std::uint8_t width, std::uint8_t height)
         : field_(player_count, width, height), alive_players_(player_count) {
     std::iota(alive_players_.begin(), alive_players_.end(), 1);
@@ -50,3 +52,5 @@ void Game::UpdateAliveness() {
     std::erase_if(alive_players_,
                   [&scores](std::size_t player_index) { return scores[player_index] == 0; });
 }
+
+}  // namespace spread_logic

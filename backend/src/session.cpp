@@ -129,10 +129,10 @@ boost::asio::awaitable<void> Session::handle_join_lobby(const nlohmann::json& ms
 }
 
 boost::asio::awaitable<void> Session::handle_leave_lobby(const nlohmann::json& msg) {
-    std::string lobby_id = msg.at("lobby_id");
-    co_await lobby_manager_.leave_lobby(lobby_id);
-    spdlog::info("{} left lobby {}", player_id_, lobby_id);
-    send_json({{"type", "left"}, {"lobby_id", lobby_id}});
+    (void)msg;  // Unused
+    co_await lobby_manager_.leave_lobby(player_id_);
+    spdlog::info("{} left their lobby", player_id_);
+    send_json({{"type", "left"}});
 }
 
 // boost::asio::awaitable<void> Session::handle_start_game(const nlohmann::json& msg) {

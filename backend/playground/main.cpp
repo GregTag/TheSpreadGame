@@ -6,7 +6,7 @@
 
 #include "game.hpp"
 
-static void print_board(const Field& field) {
+static void print_board(const spread_logic::Field& field) {
     const auto& squares = field.GetSquares();
     auto w = field.GetWidth();
     auto h = field.GetHeight();
@@ -40,8 +40,8 @@ int main() {
         }
     }
 
-    Game game(static_cast<std::size_t>(p), static_cast<std::uint8_t>(w),
-              static_cast<std::uint8_t>(h));
+    spread_logic::Game game(static_cast<std::size_t>(p), static_cast<std::uint8_t>(w),
+                            static_cast<std::uint8_t>(h));
 
     while (true) {
         std::cout << "\nCurrent board (owner+fullness):\n";
@@ -57,10 +57,11 @@ int main() {
             std::cout << "Input ended.\n";
             break;
         }
+        auto pos = spread_logic::Coordinate{static_cast<int8_t>(x), static_cast<int8_t>(y)};
         // consume trailing newline
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
         try {
-            game.MakeMove(Coordinate{static_cast<std::int8_t>(x), static_cast<std::int8_t>(y)});
+            game.MakeMove(pos);
         } catch (const std::logic_error& e) {
             std::cout << e.what() << "\n";
             continue;

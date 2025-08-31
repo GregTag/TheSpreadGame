@@ -5,6 +5,8 @@
 #include <queue>
 #include <vector>
 
+namespace spread_logic {
+
 struct Sides {
     enum : std::uint8_t { NONE = 0, TOP = 1, RIGHT = 2, BOTTOM = 4, LEFT = 8 };
 
@@ -79,3 +81,5 @@ class Field {
     std::vector<Square> squares_;
     std::queue<std::uint8_t> spread_queue_;
 };
+
+}  // namespace spread_logic

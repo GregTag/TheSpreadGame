@@ -13,7 +13,8 @@
 #include <nlohmann/json.hpp>
 #include <string>
 
-class LobbyManager;  // fwd
+class LobbyManager;     // fwd
+class GameCoordinator;  // fwd
 
 class Session : public std::enable_shared_from_this<Session> {
     using executor_type = boost::asio::io_context::executor_type;
@@ -48,6 +49,7 @@ class Session : public std::enable_shared_from_this<Session> {
 
    private:
     LobbyManager& lobby_manager_;
+    std::weak_ptr<GameCoordinator> game_coordinator_;
     std::string player_id_;
     boost::beast::flat_buffer buffer_;
     boost::asio::strand<executor_type> strand_;

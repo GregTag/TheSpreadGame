@@ -48,7 +48,7 @@ boost::asio::awaitable<std::string> LobbyManager::create_lobby_impl(const std::s
     }
 
     std::ostringstream oss;
-    oss << "l" << counter_++;
+    oss << "l" << lobby_counter_++;
     std::string lobby_id = oss.str();
     lobbies_[lobby_id] = models::Lobby{lobby_id, player_id, {player_id}, std::move(options)};
     membership_[player_id] = lobby_id;

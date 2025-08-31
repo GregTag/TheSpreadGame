@@ -6,6 +6,8 @@
 
 #include "field.hpp"
 
+namespace spread_logic {
+
 namespace errors {
 const std::logic_error InvalidMove{"Invalid move: out of bounds or not allowed"};
 const std::logic_error PlayerNotAlive{"Invalid move: player is not alive"};
@@ -43,3 +45,5 @@ class Game {
     std::size_t turn_count_{0};
     std::optional<std::size_t> winner_;
 };
+
+}  // namespace spread_logic

@@ -4,7 +4,6 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/strand.hpp>
 #include <nlohmann/json.hpp>
-#include <nlohmann/json_fwd.hpp>
 #include <string>
 #include <unordered_map>
 
@@ -14,7 +13,7 @@
 class Session;
 
 class LobbyManager {
-    using execute_type = boost::asio::io_context::executor_type;
+    using executor_type = boost::asio::io_context::executor_type;
 
    public:
     LobbyManager(boost::asio::io_context& ioc) : strand_(ioc.get_executor()) {}
@@ -54,13 +53,13 @@ class LobbyManager {
             nlohmann::json msg, std::vector<std::shared_ptr<Session>> sessions);
 
    private:
-    boost::asio::strand<execute_type> strand_;
+    boost::asio::strand<executor_type> strand_;
     // player_id -> weak session
     std::unordered_map<std::string, std::weak_ptr<Session>> sessions_;
     // lobby_id -> lobby
     std::unordered_map<std::string, models::Lobby> lobbies_;
     // player_id -> lobby_id (membership)
     std::unordered_map<std::string, std::string> membership_;
-    int counter_ = 1;
+    int lobby_counter_ = 1;
     int player_counter_ = 1;
 };

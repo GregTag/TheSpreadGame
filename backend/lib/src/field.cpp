@@ -1,5 +1,7 @@
 #include "field.hpp"
 
+namespace spread_logic {
+
 bool Square::IsFilled() const {
     return fullness >= capacity;
 }
@@ -145,3 +147,5 @@ void Field::ChangeOwner(Square& square, std::uint8_t new_owner) {
     player_scores_[new_owner] += square.fullness;
     square.owner_index = new_owner;
 }
+
+}  // namespace spread_logic
