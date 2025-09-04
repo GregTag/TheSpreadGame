@@ -4,11 +4,14 @@
 #include <boost/asio/async_result.hpp>
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/basic_stream_socket.hpp>
+#include <boost/asio/buffer.hpp>
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/detached.hpp>
+#include <boost/asio/experimental/concurrent_channel.hpp>
 #include <boost/asio/strand.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/websocket.hpp>
+#include <boost/system/detail/error_code.hpp>
 #include <memory>
 #include <nlohmann/json.hpp>
 #include <string>
@@ -17,41 +20,47 @@ class LobbyManager;     // fwd
 class GameCoordinator;  // fwd
 
 class Session : public std::enable_shared_from_this<Session> {
-    using executor_type = boost::asio::io_context::executor_type;
-    using strand_type = boost::asio::strand<boost::asio::io_context::executor_type>;
-    using socket = boost::asio::basic_stream_socket<boost::asio::ip::tcp, executor_type>;
-    using inner_socket = boost::asio::basic_stream_socket<boost::asio::ip::tcp, strand_type>;
-    using websocket_stream = boost::beast::websocket::stream<inner_socket>;
+  using ExecutorType = boost::asio::io_context::executor_type;
+  using StrandType =
+      boost::asio::strand<boost::asio::io_context::executor_type>;
+  using Socket =
+      boost::asio::basic_stream_socket<boost::asio::ip::tcp, ExecutorType>;
+  using InnerSocket =
+      boost::asio::basic_stream_socket<boost::asio::ip::tcp, ExecutorType>;
+  using WebsocketStream = boost::beast::websocket::stream<InnerSocket>;
+  using MessageType = std::shared_ptr<std::string>;
+  using ChannelType = boost::asio::experimental::concurrent_channel<
+      ExecutorType, void(boost::system::error_code, MessageType)>;
 
-   public:
-    Session(socket socket, LobbyManager& lobby_manager);
-    void start();
-    const std::string& player_id() const {
-        return player_id_;
-    }
+ public:
+  Session(Socket socket, LobbyManager& lobby_manager);
+  void Start();
+  const std::string& PlayerId() const;
 
-    websocket_stream& ws() {
-        return ws_;
-    }
+  void SetGame(std::shared_ptr<GameCoordinator> game);
 
-   private:
-    boost::asio::awaitable<void> run();
-    void send_json(nlohmann::json msg);
-    boost::asio::awaitable<void> route_message(nlohmann::json msg);
+  void Send(MessageType message);
 
-    // Handlers
-    boost::asio::awaitable<void> handle_ping(const nlohmann::json& msg);
-    boost::asio::awaitable<void> handle_list_lobbies(const nlohmann::json& msg);
-    boost::asio::awaitable<void> handle_create_lobby(const nlohmann::json& msg);
-    boost::asio::awaitable<void> handle_join_lobby(const nlohmann::json& msg);
-    boost::asio::awaitable<void> handle_leave_lobby(const nlohmann::json& msg);
-    // boost::asio::awaitable<void> handle_start_game(const nlohmann::json& msg);
+ private:
+  boost::asio::awaitable<void> RunReader();
+  boost::asio::awaitable<void> RunWriter();
+  void SendJson(nlohmann::json msg);
+  boost::asio::awaitable<void> RouteMessage(nlohmann::json msg);
 
-   private:
-    LobbyManager& lobby_manager_;
-    std::weak_ptr<GameCoordinator> game_coordinator_;
-    std::string player_id_;
-    boost::beast::flat_buffer buffer_;
-    boost::asio::strand<executor_type> strand_;
-    websocket_stream ws_;
+  // Handlers
+  boost::asio::awaitable<void> HandlePing(const nlohmann::json& msg);
+  boost::asio::awaitable<void> HandleListLobbies(const nlohmann::json& msg);
+  boost::asio::awaitable<void> HandleCreateLobby(const nlohmann::json& msg);
+  boost::asio::awaitable<void> HandleJoinLobby(const nlohmann::json& msg);
+  boost::asio::awaitable<void> HandleLeaveLobby(const nlohmann::json& msg);
+  boost::asio::awaitable<void> HandleStartGame(const nlohmann::json& msg);
+  boost::asio::awaitable<void> HandleMakeMove(const nlohmann::json& msg);
+
+ private:
+  LobbyManager& lobby_manager_;
+  std::atomic<std::shared_ptr<GameCoordinator>> game_coordinator_;
+  std::string player_id_;
+  boost::beast::flat_buffer buffer_;
+  WebsocketStream ws_;
+  ChannelType channel_;
 };

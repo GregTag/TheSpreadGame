@@ -7,18 +7,19 @@
 #include "lobby_manager.hpp"
 
 class Server {
-    using executor_type = boost::asio::io_context::executor_type;
-    using acceptor_type = boost::asio::basic_socket_acceptor<boost::asio::ip::tcp, executor_type>;
+  using ExecutorType = boost::asio::io_context::executor_type;
+  using AcceptorType =
+      boost::asio::basic_socket_acceptor<boost::asio::ip::tcp, ExecutorType>;
 
-   public:
-    Server(boost::asio::io_context& ioc, unsigned short port);
-    void start();
+ public:
+  Server(boost::asio::io_context& ioc, unsigned short port);
+  void Start();
 
-   private:
-    boost::asio::awaitable<void> do_accept();
+ private:
+  boost::asio::awaitable<void> DoAccept();
 
-    boost::asio::io_context& ioc_;
-    acceptor_type acceptor_;
+  boost::asio::io_context& ioc_;
+  AcceptorType acceptor_;
 
-    LobbyManager lobby_manager_;
+  LobbyManager lobby_manager_;
 };

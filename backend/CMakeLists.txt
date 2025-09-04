@@ -15,6 +15,7 @@ find_package(Boost REQUIRED COMPONENTS system)
 find_package(nlohmann_json REQUIRED)
 find_package(spdlog REQUIRED)
 
+set(ENABLE_JSON true)
 add_subdirectory(lib)
 
 # Find all source files
