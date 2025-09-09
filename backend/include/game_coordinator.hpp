@@ -26,7 +26,7 @@ class GameCoordinator : std::enable_shared_from_this<GameCoordinator> {
       ExecutorType exec, std::vector<std::weak_ptr<Session>> sessions);
 
   boost::asio::awaitable<void> MakeMove(const std::string& player_id,
-                                        std::size_t cell_id);
+                                        std::size_t cell_idx);
 
   void EliminatePlayer(const std::string& player_id);
 
@@ -36,7 +36,7 @@ class GameCoordinator : std::enable_shared_from_this<GameCoordinator> {
 
  private:
   boost::asio::awaitable<void> MakeMoveImpl(const std::string& player_id,
-                                            std::size_t cell_id);
+                                            std::size_t cell_idx);
 
   boost::asio::awaitable<void> EliminatePlayerImpl(
       const std::string& player_id);
@@ -49,7 +49,8 @@ class GameCoordinator : std::enable_shared_from_this<GameCoordinator> {
   LobbyManager& lobby_manager_;
   spread_logic::Game game_;
   std::string id_;
-  std::unordered_map<std::string, int> player_ids_;
+  std::vector<std::string> players_;
+  std::unordered_map<std::string, std::size_t> player_to_idx_;
   std::vector<std::weak_ptr<Session>> sessions_;
   boost::asio::strand<ExecutorType> strand_;
 };

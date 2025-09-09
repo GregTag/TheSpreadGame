@@ -75,11 +75,11 @@ int main() {
     // consume trailing newline
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     try {
-      if (auto cell_id = game.GetField().GetIndex(pos); !cell_id) {
+      if (auto cell_idx = game.GetField().GetIndex(pos); !cell_idx) {
         std::cout << "Position out of bounds.\n";
         continue;
       } else {
-        game.MakeMove(*cell_id);
+        game.MakeMove(*cell_idx);
       }
     } catch (const std::logic_error& e) {
       std::cout << e.what() << "\n";

@@ -202,8 +202,8 @@ boost::asio::awaitable<void> Session::HandleMakeMove(
     spdlog::warn("{} tried to make a move but is not in a game", player_id_);
     throw errors::kPlayerNotInGame;
   }
-  auto cell_id = msg.at("cell_id").get<std::size_t>();
-  co_await game->MakeMove(player_id_, cell_id);
+  std::size_t cell_idx = msg.at("cell_idx");
+  co_await game->MakeMove(player_id_, cell_idx);
 }
 const std::string& Session::PlayerId() const {
   return player_id_;

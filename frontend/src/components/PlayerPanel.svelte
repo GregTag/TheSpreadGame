@@ -7,19 +7,16 @@
 <div class="space-y-3">
     <h3 class="font-semibold">Players</h3>
     <ul class="space-y-1">
-        {#each game?.players || [] as p}
+        {#each game?.alive_players || [] as pid, idx}
             <li class="flex items-center gap-2 text-sm">
                 <span
                     class="inline-block w-3 h-3 rounded-full"
-                    style="background:{p.color || 'gray'}"
+                    style="background:{gameStore.playerColors[idx]}"
                 ></span>
-                <span class="font-mono">{p.id}</span>
-                {#if p.eliminated}
-                    <span class="text-red-400 ml-auto">eliminated</span>
-                {/if}
-                {#if game?.activePlayerId === p.id}
-                    <span class="ml-auto text-indigo-400">your turn</span>
-                {/if}
+                <span
+                    class="font-mono"
+                    class:underline={game?.current_player === pid}>{pid}</span
+                >
             </li>
         {/each}
     </ul>

@@ -54,7 +54,7 @@ class Field {
   // Place a dot for the given player at the position if rules allow (unowned or
   // already owned by that player). Returns true if the dot was placed, false if
   // the move is invalid or out of bounds.
-  bool PlaceDot(std::size_t player_index, std::size_t cell_id);
+  bool PlaceDot(std::size_t player_index, std::size_t cell_idx);
 
   std::optional<std::size_t> GetIndex(Coordinate pos) const;
 

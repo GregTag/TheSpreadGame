@@ -12,17 +12,17 @@ Game::Game(std::size_t player_count, std::uint8_t width, std::uint8_t height)
   std::iota(alive_players_.begin(), alive_players_.end(), 1);
 }
 
-void Game::MakeMove(std::size_t cell_id) {
+void Game::MakeMove(std::size_t cell_idx) {
   if (alive_players_.size() <= 1) {
     throw errors::kGameAlreadyOver;
   }
 
   // Try placing the dot
-  if (!field_.PlaceDot(*current_player_, cell_id)) {
+  if (!field_.PlaceDot(*current_player_, cell_idx)) {
     throw errors::kInvalidMove;
   }
 
-  move_history_.emplace_back(Move{*current_player_, cell_id});
+  move_history_.emplace_back(Move{*current_player_, cell_idx});
 
   // Perform spreading chain reaction
   while (field_.SpreadStep() != 0) {
@@ -78,12 +78,12 @@ void Game::UpdateAliveness() {
 #ifdef SPREAD_LOGIC_ENABLE_JSON
 void to_json(nlohmann::json& j, const Move& move) {
   j = nlohmann::json{{"player_index", move.player_index},
-                     {"cell_id", move.cell_id}};
+                     {"cell_idx", move.cell_idx}};
 }
 
 void from_json(const nlohmann::json& j, Move& move) {
   j.at("player_index").get_to(move.player_index);
-  j.at("cell_id").get_to(move.cell_id);
+  j.at("cell_idx").get_to(move.cell_idx);
 }
 #endif
 

@@ -63,11 +63,11 @@ const std::vector<Cell>& Field::GetCells() const {
   return cells_;
 }
 
-bool Field::PlaceDot(std::size_t player_index, std::size_t cell_id) {
-  if (cell_id >= cells_.size()) {
+bool Field::PlaceDot(std::size_t player_index, std::size_t cell_idx) {
+  if (cell_idx >= cells_.size()) {
     return false;
   }
-  auto& cell = cells_[cell_id];
+  auto& cell = cells_[cell_idx];
   if (cell.IsOwned() && cell.owner_index != player_index) {
     return false;  // cannot place on enemy owned cell
   }
@@ -75,7 +75,7 @@ bool Field::PlaceDot(std::size_t player_index, std::size_t cell_id) {
   player_scores_[player_index]++;
   cell.owner_index = static_cast<std::uint8_t>(player_index);
   if (cell.AddDot()) {
-    spread_queue_.push(cell_id);
+    spread_queue_.push(cell_idx);
   }
 
   return true;

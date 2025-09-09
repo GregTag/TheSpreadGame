@@ -7,6 +7,8 @@ function createWebSocketStore() {
     const send = (msg) => {
         if (ws && ws.readyState === WebSocket.OPEN) {
             ws.send(JSON.stringify(msg))
+        } else {
+            console.error('WebSocket not open, cannot send', msg)
         }
     }
 

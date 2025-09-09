@@ -17,7 +17,7 @@ const std::logic_error kGameAlreadyOver{"Game is already over"};
 
 struct Move {
   std::size_t player_index;
-  std::size_t cell_id;
+  std::size_t cell_idx;
 };
 
 class Game {
@@ -42,7 +42,7 @@ class Game {
   }
 
   // Make a move for the active player at position.
-  void MakeMove(std::size_t cell_id);
+  void MakeMove(std::size_t cell_idx);
 
   // Advance to next alive player
   void NextTurn();

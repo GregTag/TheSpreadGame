@@ -3,7 +3,7 @@ import { writable } from 'svelte/store'
 function createGameStore() {
     const state = writable({ lobbies: [] })
 
-    const playerColors = ['#ef4444', '#3b82f6', '#22c55e', '#eab308']
+    const playerColors = ['#ef4444', '#3b82f6', '#22c55e', '#eab308', '#8b5cf6', '#ec4899', '#f97316', '#14b8a6']
 
     const setFromMessage = (msg) => {
         state.update((s) => {
@@ -37,48 +37,21 @@ function createGameStore() {
                 }
                 case 'game_state': {
                     const g = { ...msg }
-                    if (Array.isArray(g.players)) {
-                        g.players = g.players.map((p) => ({ ...p, color: p.color || playerColorFor(p.id || p.player_id || '') }))
+                    if (Array.isArray(g.alive_players) && g.alive_players.length <= 1) {
+                        g.winner = g.alive_players[0] || null
                     }
-                    if (g.board && !g.board.cells && Array.isArray(g.board.squares)) {
-                        // normalize to cells
-                        g.board.cells = g.board.squares.map((sq, i) => ({ id: i, owner: sq.owner_id || sq.owner || null, count: sq.dots || sq.count || 0 }))
+                    if (Array.isArray(g.move_history)) {
+                        g.lastMove = g.move_history[g.move_history.length - 1] || null
                     }
+                    g.ourTurn = g.current_player === s.playerId
                     return { ...s, game: g }
-                }
-                case 'move_result': {
-                    const merged = { ...(s.game || {}), ...(msg.state || {}) }
-                    if (Array.isArray(merged.players)) {
-                        merged.players = merged.players.map((p) => ({ ...p, color: p.color || playerColorFor(p.id || p.player_id || '') }))
-                    }
-                    if (merged.board && !merged.board.cells && Array.isArray(merged.board.squares)) {
-                        merged.board.cells = merged.board.squares.map((sq, i) => ({ id: i, owner: sq.owner_id || sq.owner || null, count: sq.dots || sq.count || 0 }))
-                    }
-                    return { ...s, game: merged }
-                }
-                case 'player_eliminated': {
-                    const game = s.game ? { ...s.game } : undefined
-                    if (game && game.players) {
-                        const p = game.players.find((p) => p.id === msg.player_id)
-                        if (p) p.eliminated = true
-                    }
-                    return { ...s, game }
-                }
-                case 'game_over': {
-                    const game = s.game ? { ...s.game, winner: msg.winner } : undefined
-                    return { ...s, game }
                 }
             }
             return s
         })
     }
 
-    const playerColorFor = (pid) => {
-        const idx = Math.abs([...pid].reduce((a, c) => a + c.charCodeAt(0), 0)) % playerColors.length
-        return playerColors[idx]
-    }
-
-    return { state: { subscribe: state.subscribe }, setFromMessage, playerColorFor }
+    return { state: { subscribe: state.subscribe }, setFromMessage, playerColors }
 }
 
 export const gameStore = createGameStore()
