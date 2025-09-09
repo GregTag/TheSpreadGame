@@ -1,0 +1,514 @@
+asyncapi: 3.0.0
+id: "urn:spread:asyncapi"
+info:
+  title: Spread — WebSocket API
+  version: 0.1.0
+  description: >
+    AsyncAPI specification for "Spread" — a multiplayer board game using a single WebSocket endpoint. This document defines all messages the client and server exchange: connection handshake, lobby operations, game lifecycle, moves, state updates, chat, and diagnostics (ping/pong, errors).
+  tags:
+    - name: lobby
+      description: Lobby lifecycle messages (create/join/list/leave/update)
+    - name: game
+      description: Game lifecycle and gameplay messages (start, make_move, game_state)
+    - name: system
+      description: Ping/pong and server_ready diagnostics
+servers:
+  production:
+    host: "{host}:{port}"
+    pathname: /
+    protocol: ws
+    description: WebSocket server for Spread
+    variables:
+      host:
+        default: localhost
+      port:
+        default: "8080"
+channels:
+  /ws:
+    address: /ws
+    messages:
+      clientToServer.message.0:
+        $ref: "#/components/messages/ping"
+      clientToServer.message.1:
+        $ref: "#/components/messages/create_lobby"
+      clientToServer.message.2:
+        $ref: "#/components/messages/join_lobby"
+      clientToServer.message.3:
+        $ref: "#/components/messages/list_lobbies"
+      clientToServer.message.4:
+        $ref: "#/components/messages/start_game"
+      clientToServer.message.5:
+        $ref: "#/components/messages/make_move"
+      clientToServer.message.6:
+        $ref: "#/components/messages/leave_lobby"
+      serverToClient.message.0:
+        $ref: "#/components/messages/server_ready"
+      serverToClient.message.1:
+        $ref: "#/components/messages/lobby_list"
+      serverToClient.message.2:
+        $ref: "#/components/messages/lobby_update"
+      serverToClient.message.3:
+        $ref: "#/components/messages/game_state"
+      serverToClient.message.4:
+        $ref: "#/components/messages/error"
+      serverToClient.message.5:
+        $ref: "#/components/messages/pong"
+      serverToClient.message.6:
+        $ref: "#/components/messages/lobby_created"
+      serverToClient.message.7:
+        $ref: "#/components/messages/joined"
+      serverToClient.message.8:
+        $ref: "#/components/messages/left"
+      serverToClient.message.9:
+        $ref: "#/components/messages/lobby_gone"
+    description: >-
+      Single bidirectional WebSocket channel. Clients subscribe to server
+      messages and publish client messages to this path.
+operations:
+  clientToServer:
+    action: receive
+    channel:
+      $ref: "#/channels/~1ws"
+    summary: Messages published by the client (server receives)
+    messages:
+      - $ref: "#/channels/~1ws/messages/clientToServer.message.0"
+      - $ref: "#/channels/~1ws/messages/clientToServer.message.1"
+      - $ref: "#/channels/~1ws/messages/clientToServer.message.2"
+      - $ref: "#/channels/~1ws/messages/clientToServer.message.3"
+      - $ref: "#/channels/~1ws/messages/clientToServer.message.4"
+      - $ref: "#/channels/~1ws/messages/clientToServer.message.5"
+      - $ref: "#/channels/~1ws/messages/clientToServer.message.6"
+  serverToClient:
+    action: send
+    channel:
+      $ref: "#/channels/~1ws"
+    summary: Messages published by the server (clients receive)
+    messages:
+      - $ref: "#/channels/~1ws/messages/serverToClient.message.0"
+      - $ref: "#/channels/~1ws/messages/serverToClient.message.1"
+      - $ref: "#/channels/~1ws/messages/serverToClient.message.2"
+      - $ref: "#/channels/~1ws/messages/serverToClient.message.3"
+      - $ref: "#/channels/~1ws/messages/serverToClient.message.4"
+      - $ref: "#/channels/~1ws/messages/serverToClient.message.5"
+      - $ref: "#/channels/~1ws/messages/serverToClient.message.6"
+      - $ref: "#/channels/~1ws/messages/serverToClient.message.7"
+      - $ref: "#/channels/~1ws/messages/serverToClient.message.8"
+      - $ref: "#/channels/~1ws/messages/serverToClient.message.9"
+components:
+  messages:
+    server_ready:
+      name: server_ready
+      title: Server Ready
+      summary: >-
+        Sent by server immediately after handshake to confirm connection and
+        provide player_id.
+      payload:
+        $ref: "#/components/schemas/serverReady"
+      examples:
+        - payload:
+            type: server_ready
+            player_id: p1
+            message: Welcome to Spread server
+    lobby_list:
+      name: lobby_list
+      title: Lobby List
+      summary: Full list of open lobbies.
+      payload:
+        $ref: "#/components/schemas/lobbyList"
+      examples:
+        - payload:
+            type: lobby_list
+            lobbies:
+              - id: l1
+                status: 0
+                host_player_id: p1
+                players: [p1]
+                options:
+                  { name: "Quick 4p", max_players: 4, width: 8, height: 8 }
+    lobby_update:
+      name: lobby_update
+      title: Lobby Update
+      summary: Broadcast when a lobby changes (create/join/leave/status change).
+      payload:
+        type: object
+        properties:
+          type:
+            type: string
+            const: lobby_update
+          lobby:
+            $ref: "#/components/schemas/lobby"
+        required: [type, lobby]
+    lobby_created:
+      name: lobby_created
+      title: Lobby Created
+      summary: Broadcast when a new lobby is created.
+      payload:
+        type: object
+        properties:
+          type:
+            type: string
+            const: lobby_created
+          lobby:
+            $ref: "#/components/schemas/lobby"
+        required: [type, lobby]
+    lobby_gone:
+      name: lobby_gone
+      title: Lobby Gone
+      summary: Broadcast when a lobby is deleted (last player left).
+      payload:
+        type: object
+        properties:
+          type:
+            type: string
+            const: lobby_gone
+          lobby_id:
+            type: string
+        required: [type, lobby_id]
+    game_state:
+      name: game_state
+      title: Game State
+      summary: >-
+        Snapshot of game state sent when a game starts and after each move or elimination.
+      payload:
+        $ref: "#/components/schemas/gameState"
+    player_joined:
+      # removed: not used by the backend
+      $ref: "#/components/messages/server_ready" # placeholder to satisfy YAML anchors if any
+    error:
+      name: error
+      title: Error
+      summary: Error message with code and text.
+      payload:
+        $ref: "#/components/schemas/error"
+      examples:
+        - payload:
+            type: error
+            message: "Invalid move: dot already filled"
+    pong:
+      name: pong
+      title: Pong
+      summary: "Server response to client's ping, used for diagnostics."
+      payload:
+        type: object
+        properties:
+          type:
+            type: string
+            const: pong
+        required:
+          - type
+      examples:
+        - payload:
+            type: pong
+    ping:
+      name: ping
+      title: Ping
+      summary: Client ping for diagnostics. Server should reply with pong.
+      payload:
+        type: object
+        properties:
+          type:
+            type: string
+            const: ping
+        required:
+          - type
+      examples:
+        - payload:
+            type: ping
+    create_lobby:
+      name: create_lobby
+      title: Create Lobby
+      summary: Request to create a new lobby. The requesting player becomes host.
+      payload:
+        $ref: "#/components/schemas/createLobbyRequest"
+      examples:
+        - payload:
+            type: create_lobby
+            name: Quick 4p
+            board_size:
+              - 8
+              - 8
+            max_players: 4
+    join_lobby:
+      name: join_lobby
+      title: Join Lobby
+      summary: Request to join a lobby by id.
+      payload:
+        $ref: "#/components/schemas/joinLobbyRequest"
+      examples:
+        - payload:
+            type: join_lobby
+            lobby_id: "1"
+    list_lobbies:
+      name: list_lobbies
+      title: List Lobbies
+      summary: Request the server to return current open lobbies.
+      payload:
+        type: object
+        properties:
+          type:
+            type: string
+            const: list_lobbies
+        required: [type]
+    start_game:
+      name: start_game
+      title: Start Game
+      summary: Host-only request to start the current lobby's match.
+      payload:
+        $ref: "#/components/schemas/startGameRequest"
+      examples:
+        - payload:
+            type: start_game
+    make_move:
+      name: make_move
+      title: Make Move
+      summary: Player makes a move by placing a dot on a cell index.
+      payload:
+        $ref: "#/components/schemas/makeMoveRequest"
+      examples:
+        - payload:
+            type: make_move
+            cell_idx: 42
+    leave_lobby:
+      name: leave_lobby
+      title: Leave Lobby
+      summary: Player leaves a lobby.
+      payload:
+        type: object
+        properties:
+          type:
+            type: string
+            const: leave_lobby
+        required:
+          - type
+    joined:
+      name: joined
+      title: Joined
+      summary: Acknowledgement to the client that they joined a lobby.
+      payload:
+        type: object
+        properties:
+          type:
+            type: string
+            const: joined
+          lobby_id:
+            type: string
+        required: [type, lobby_id]
+    left:
+      name: left
+      title: Left
+      summary: Acknowledgement to the client that they left their lobby.
+      payload:
+        type: object
+        properties:
+          type:
+            type: string
+            const: left
+        required: [type]
+  schemas:
+    serverReady:
+      type: object
+      properties:
+        type:
+          type: string
+          const: server_ready
+        player_id:
+          type: string
+          description: Unique identifier assigned to this WebSocket connection.
+        message:
+          type: string
+      required:
+        - type
+        - player_id
+    lobbyOptions:
+      type: object
+      properties:
+        name:
+          type: string
+        max_players:
+          type: integer
+        width:
+          type: integer
+        height:
+          type: integer
+      required: [name, max_players, width, height]
+    lobbyStatus:
+      type: integer
+      enum: [0, 1, 2]
+      description: "0=Open, 1=InProgress, 2=Finished"
+    lobby:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          $ref: "#/components/schemas/lobbyStatus"
+        host_player_id:
+          type: string
+          description: player_id of host
+        players:
+          type: array
+          items:
+            type: string
+        options:
+          $ref: "#/components/schemas/lobbyOptions"
+      required:
+        - id
+        - status
+        - host_player_id
+        - players
+        - options
+    lobbyList:
+      type: object
+      properties:
+        type:
+          type: string
+          const: lobby_list
+        lobbies:
+          type: array
+          items:
+            $ref: "#/components/schemas/lobby"
+      required:
+        - type
+        - lobbies
+    createLobbyRequest:
+      type: object
+      properties:
+        type:
+          type: string
+          const: create_lobby
+        name:
+          type: string
+        board_size:
+          type: array
+          items:
+            type: integer
+          minItems: 2
+          maxItems: 2
+        max_players:
+          type: integer
+      required:
+        - type
+        - name
+        - board_size
+        - max_players
+    joinLobbyRequest:
+      type: object
+      properties:
+        type:
+          type: string
+          const: join_lobby
+        lobby_id:
+          type: string
+      required:
+        - type
+        - lobby_id
+    startGameRequest:
+      type: object
+      properties:
+        type:
+          type: string
+          const: start_game
+      required:
+        - type
+    makeMoveRequest:
+      type: object
+      properties:
+        type:
+          type: string
+          const: make_move
+        cell_idx:
+          type: integer
+      required:
+        - type
+        - cell_idx
+    fieldCell:
+      type: object
+      properties:
+        x:
+          type: integer
+        "y":
+          type: integer
+        configuration:
+          type: integer
+        capacity:
+          type: integer
+        fullness:
+          type: integer
+        owner_index:
+          type: integer
+      required:
+        - x
+        - "y"
+        - configuration
+        - capacity
+        - fullness
+        - owner_index
+    field:
+      type: object
+      properties:
+        width:
+          type: integer
+        height:
+          type: integer
+        cells:
+          type: array
+          items:
+            $ref: "#/components/schemas/fieldCell"
+        scores:
+          type: array
+          items:
+            type: integer
+      required:
+        - width
+        - height
+        - cells
+        - scores
+    gameState:
+      type: object
+      properties:
+        type:
+          type: string
+          const: game_state
+        field:
+          $ref: "#/components/schemas/field"
+        alive_players:
+          type: array
+          items:
+            type: string
+        current_player:
+          type: string
+        turn:
+          type: integer
+        move_history:
+          type: array
+          items:
+            $ref: "#/components/schemas/move"
+      required:
+        - type
+        - field
+        - alive_players
+        - current_player
+        - turn
+        - move_history
+    move:
+      type: object
+      properties:
+        player_index:
+          type: integer
+        cell_idx:
+          type: integer
+      required: [player_index, cell_idx]
+    error:
+      type: object
+      properties:
+        type:
+          type: string
+          const: error
+        message:
+          type: string
+      required:
+        - type
+        - message
+  securitySchemes:
+    none:
+      type: userPassword
