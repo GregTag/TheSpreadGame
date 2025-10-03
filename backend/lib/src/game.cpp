@@ -25,11 +25,10 @@ void Game::MakeMove(std::size_t cell_idx) {
   move_history_.emplace_back(Move{*current_player_, cell_idx});
 
   // Perform spreading chain reaction
-  while (field_.SpreadStep() != 0) {
+  while (field_.SpreadStep() != 0 && alive_players_.size() > 1) {
+    // Eliminate dead players
+    UpdateAliveness();
   }
-
-  // Eliminate dead players
-  UpdateAliveness();
 
   // Advance turn to next alive player
   NextTurn();
